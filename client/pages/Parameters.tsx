@@ -6,6 +6,7 @@ import RouterLink from '../components/RouterLink';
 import Text from '../components/system/Text';
 import { EthereumContext } from '../components/EthereumProvider';
 import { formatPanvalaUnits, parameterDisplayName } from '../utils/format';
+import { getParametersSet } from '../utils/api';
 
 const ParameterRow: React.SFC<any> = props => {
   return (
@@ -46,6 +47,15 @@ const Parameters: React.FC = () => {
       value: gatekeeper.address,
     },
   ];
+
+  React.useEffect(() => {
+    async function getParams() {
+      const parametersSet = await getParametersSet();
+      console.log('parametersSet:', parametersSet);
+    }
+
+    getParams();
+  }, []);
 
   return (
     <>

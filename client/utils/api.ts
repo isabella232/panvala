@@ -18,16 +18,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Origin, Content-Type',
 };
 
+const headers = {
+  Accept: 'application/json',
+  'Content-Type': 'application/json',
+  ...corsHeaders,
+};
+
 export async function getAllProposals(): Promise<IProposal[] | AxiosResponse> {
   try {
     const response = await axios({
       method: 'get',
       url: `${apiHost}/api/proposals`,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
+      headers,
     });
     if (response.status === 200) {
       return response.data;
@@ -46,11 +48,7 @@ export async function postProposal(data: IProposal): Promise<AxiosResponse> {
       method: 'post',
       url: `${apiHost}/api/proposals`,
       data,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
+      headers,
     });
     // if (response.status === 200) {
     //   return response;
@@ -71,11 +69,7 @@ export async function getAllSlates(): Promise<ISlate[] | AxiosResponse> {
     const response = await axios({
       method: 'get',
       url: `${apiHost}/api/slates`,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
+      headers,
     });
     if (response.status === 200) {
       return response.data;
@@ -97,11 +91,7 @@ export async function postSlate(data: ISaveSlate): Promise<AxiosResponse> {
     method: 'post',
     url: `${apiHost}/api/slates`,
     data,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...corsHeaders,
-    },
+    headers,
   }).catch(error => {
     throw handleApiError(error);
   });
@@ -123,11 +113,7 @@ export async function postBallot(ballot: ISubmitBallot, commitHash: string, sign
     method: 'post',
     url: `${apiHost}/api/ballots`,
     data,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...corsHeaders,
-    },
+    headers,
   }).catch(function(error) {
     throw handleApiError(error);
   });
@@ -138,11 +124,25 @@ export async function getNotificationsByAddress(address: string): Promise<any | 
     const response = await axios({
       method: 'get',
       url: `${apiHost}/api/notifications/${address}`,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
+      headers,
+    });
+    if (response.status === 200) {
+      return response.data;
+    }
+    // TODO: handle response status
+    return response;
+  } catch (error) {
+    console.error('error while getting notifcations:', error);
+    throw error;
+  }
+}
+
+export async function getParametersSet(): Promise<any | AxiosResponse> {
+  try {
+    const response = await axios({
+      method: 'get',
+      url: `${apiHost}/api/parameters`,
+      headers,
     });
     if (response.status === 200) {
       return response.data;
