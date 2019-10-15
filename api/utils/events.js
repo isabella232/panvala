@@ -1,4 +1,5 @@
 const { EthEvents } = require('eth-events');
+const { utils } = require('ethers');
 const sortBy = require('lodash/sortBy');
 const {
   contractABIs: { Gatekeeper, TokenCapacitor, ParameterStore },
@@ -93,11 +94,15 @@ async function getParametersSet(fromBlock) {
 
     const parameterInitializedEvents = events.filter(e => e.name === 'ParameterSet');
     return parameterInitializedEvents.reduce((acc, val) => {
-      return {
-        [val.values.name]: val.values.value,
+      return [
+        {
+          name: val.values.name,
+          value: utils.hexStripZeros(val.values.value),
+          key: val.values.key,
+        },
         ...acc,
-      };
-    }, {});
+      ];
+    }, []);
   } catch (error) {
     console.log('error:', error);
     return {};
