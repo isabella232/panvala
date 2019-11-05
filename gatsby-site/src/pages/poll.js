@@ -12,6 +12,7 @@ import Nav from '../components/Nav';
 import Button from '../components/Button';
 import pollOne from '../img/poll-1.png';
 import pollTwo from '../img/poll-2.png';
+import { calculateTotalPercentage } from '../utils/poll';
 
 const categories = [
   {
@@ -67,6 +68,7 @@ const ClipContainer = styled.div`
 const Poll = () => {
   const pollFormRef = useRef(null);
   const [account, setAccount] = useState('');
+  const [ptsRemaining, setPtsRemaining] = useState(100);
   const [provider, setProvider] = useState();
   const [allocations, setAllocations] = useState();
   const [percentages, setPercentages] = useState({
@@ -132,6 +134,66 @@ const Poll = () => {
     }
   }
 
+  // User changes a poll value
+  function handleChange(value, categoryID) {
+    setPercentages({
+      ...percentages,
+      [categoryID]: value,
+    });
+  }
+
+  // Triggered by change in values
+  useEffect(() => {
+    const subtotal = calculateTotalPercentage(percentages);
+    // Change the display amount of points remaining
+    setPtsRemaining(100 - subtotal);
+  }, [percentages]);
+
+  // User submits the poll
+  async function handleFormSubmit(event) {
+    event.preventDefault();
+    if (!provider) {
+      await connectWallet();
+    }
+    const percentValues = Object.keys(percentages);
+
+    // Create a new array of invalid percentages (0 - 100)
+    const zeroToHundred = /^[1-9][0-9]?$|^100$/;
+    const invalidPercentages = percentValues.reduce((acc, val) => {
+      if (zeroToHundred.test(percentages[val])) {
+        return acc;
+      }
+      return [...acc, { [val]: percentages[val] }];
+    }, []);
+    console.log('invalidPercentages:', invalidPercentages);
+
+    // Calculate the sum of the percentages
+    const totalPercentage = calculateTotalPercentage(percentages);
+
+    // Valid percentages
+    if (invalidPercentages.length === 0 && totalPercentage === 100) {
+      // Format allocations
+      const allocations = categories.map((c, index) => {
+        return {
+          categoryID: c.categoryID,
+          points: parseInt(percentages[index]),
+        };
+      });
+
+      // console.log('allocations:', allocations);
+      setAllocations(allocations);
+    }
+  }
+
+  // Triggered by validation of form, formatting of allocations
+  useEffect(() => {
+    if (account && allocations) {
+      console.log('form valid');
+      postPoll();
+    }
+  }, [account, allocations]);
+
+  // Posts poll to database
   async function postPoll() {
     const allocations = percentages;
     function generateMessage(account, pollID) {
@@ -169,56 +231,6 @@ const Poll = () => {
     //     'Access-Control-Allow-Headers': 'Origin, Content-Type',
     //   },
     // });
-  }
-
-  useEffect(() => {
-    if (account && allocations) {
-      console.log('form valid');
-      postPoll();
-    }
-  }, [account, allocations]);
-
-  function handleChange(value, categoryID) {
-    setPercentages({
-      ...percentages,
-      [categoryID]: value,
-    });
-  }
-
-  async function handleFormSubmit(event) {
-    event.preventDefault();
-    if (!provider) {
-      await connectWallet();
-    }
-    const percentValues = Object.keys(percentages);
-
-    // Create a new array of invalid percentages (0 - 100)
-    const zeroToHundred = /^[1-9][0-9]?$|^100$/;
-    const invalidPercentages = percentValues.reduce((acc, val) => {
-      if (zeroToHundred.test(percentages[val])) {
-        return acc;
-      }
-      return [...acc, { [val]: percentages[val] }];
-    }, []);
-    console.log('invalidPercentages:', invalidPercentages);
-
-    // Calculate the sum of the percentages
-    const totalPercentage = sum(percentValues.map(p => parseInt(percentages[p])));
-    console.log('totalPercentage:', totalPercentage);
-
-    // Valid percentages
-    if (invalidPercentages.length === 0 && totalPercentage === 100) {
-      // Format allocations
-      const allocations = categories.map((c, index) => {
-        return {
-          categoryID: c.categoryID,
-          points: parseInt(percentages[index]),
-        };
-      });
-
-      // console.log('allocations:', allocations);
-      setAllocations(allocations);
-    }
   }
 
   return (
@@ -303,9 +315,11 @@ const Poll = () => {
                       </div>
                       <div>
                         <input
-                          type="text"
+                          type="number"
                           name={identifier}
                           id={identifier}
+                          max="100"
+                          min="0"
                           required
                           placeholder="%"
                           onChange={e => handleChange(e.target.value, category.categoryID)}
@@ -320,6 +334,9 @@ const Poll = () => {
 
               {/* <-- name and email --> */}
               <div className="pa4 bb bw-2 b--black-10 black-60">
+                <Box color="black" display="flex" justifyContent="flex-end" mb={4}>
+                  Points Remaining: <b>{ptsRemaining}</b>
+                </Box>
                 <div className="cf pv2">
                   <div className="fl w-50 pr3">
                     <label>First Name (Optional)</label>
