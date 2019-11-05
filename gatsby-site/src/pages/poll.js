@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { layout, space } from 'styled-system';
 
@@ -57,6 +57,16 @@ const ClipContainer = styled.div`
 `;
 const Poll = () => {
   const pollFormRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
+      // Listen for network changes -> reload page
+      window.ethereum.on('networkChanged', network => {
+        console.log('MetaMask network changed:', network);
+        window.location.reload();
+      });
+    }
+  }, []);
 
   function handleViewPollClick() {
     pollFormRef.current.scrollIntoView({
