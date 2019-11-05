@@ -1,8 +1,14 @@
 import React, { useRef } from 'react';
+import styled from 'styled-components';
+import { layout, space } from 'styled-system';
 
+import Box from '../components/system/Box';
 import Layout from '../components/Layout';
 import SEO from '../components/seo';
 import Nav from '../components/Nav';
+import Button from '../components/Button';
+import pollOne from '../img/poll-1.png';
+import pollTwo from '../img/poll-2.png';
 
 const categories = [
   {
@@ -43,6 +49,12 @@ const categories = [
   },
 ];
 
+const ClipContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  ${layout};
+  ${space};
+`;
 const Poll = () => {
   const pollFormRef = useRef(null);
 
@@ -62,15 +74,20 @@ const Poll = () => {
     console.log('submit', event);
   }
 
+  function connectWallet() {
+    console.log('clickex');
+  }
+
   return (
     <Layout>
       <SEO title="Poll" />
 
-      <section className="bg-gradient bottom-clip-hero pb5">
+      <section className="bg-gradient bottom-clip-up-1">
         <Nav />
+
         {/* <!-- Instructions --> */}
-        <div className="cf pv5 ph6 tc">
-          <div className="fl w-100 w-50-ns pl5 pr2 tl">
+        <ClipContainer p={['1rem 0 4rem', '5rem 6rem']}>
+          <Box width={[1, 1, 0.5]} px={['4', '4', '2']}>
             <h1 className="white f1-5 b ma0 mb4 w-80-l w-100">The Panvala Poll</h1>
             <div className="f5 lh-copy mb3">
               <p className="w-60 mb0 white b">
@@ -89,22 +106,25 @@ const Poll = () => {
                 View Poll
               </button>
             </div>
-          </div>
-
-          <div className="fl w-100 w-50-ns pa2"></div>
-        </div>
+          </Box>
+          <Box width={[1, 1, 0.5]} p={[4, 2]} display={['none', 'none', 'block']}>
+            <img src={pollOne} className="w-100 center" />
+          </Box>
+        </ClipContainer>
       </section>
 
       {/* Fund work that matters */}
-      <section className="cf w-100 ph6 pt3 bottom-clip-down bg-white">
-        <div className="fl w-100 w-50-ns pa2 pl6"></div>
-        <div className="fl w-100 w-50-ns pa2 pr6">
+      <section className="cf w-100 ph6 pv4 bottom-clip-down bg-white flex justify-between items-center">
+        <div className="w-100 w-25-ns pa2 dib">
+          <img src={pollTwo} className="center" />
+        </div>
+        <div className="w-100 w-50-ns pa2 dib">
           <h2>Fund work that matters</h2>
           <p>
             PAN tokens have been granted to teams that the whole Ethereum community depends on. The
             more tokens you acquire to vote, the more work those teams can fund with their tokens.
           </p>
-          <div className="pv3 b">Connect your wallet</div>
+          <Button handleClick={connectWallet} text="Connect your wallet" />
         </div>
       </section>
 
