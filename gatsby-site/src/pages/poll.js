@@ -3,7 +3,6 @@ import { providers } from 'ethers';
 import styled from 'styled-components';
 import { layout, space } from 'styled-system';
 import panUtils from 'panvala-utils';
-import sum from 'lodash/sum';
 
 import Box from '../components/system/Box';
 import Layout from '../components/Layout';
