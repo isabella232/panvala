@@ -175,7 +175,7 @@ const Poll = () => {
       const allocations = categories.map((c, index) => {
         return {
           categoryID: c.categoryID,
-          points: parseInt(percentages[index]),
+          points: parseInt(percentages[c.categoryID]),
         };
       });
 
@@ -194,7 +194,6 @@ const Poll = () => {
 
   // Posts poll to database
   async function postPoll() {
-    const allocations = percentages;
     function generateMessage(account, pollID) {
       // Always use checksum address in the message
       return `Response from ${account} for poll ID ${pollID}`;
@@ -202,7 +201,7 @@ const Poll = () => {
 
     console.log('panUtils:', panUtils);
     const pollID = '1';
-    const message = await generateMessage(account, pollID);
+    const message = generateMessage(account, pollID);
 
     const signer = provider.getSigner();
     const signature = await signer.signMessage(message);
@@ -213,23 +212,29 @@ const Poll = () => {
       },
       signature,
     };
+
     console.log('data:', data);
-    return;
 
-    // const apiHost = 'https://localhost:5001';
-    // const endpoint = `${apiHost}/api/polls/${pollID}`;
+    const apiHost = 'http://localhost:5001';
+    const endpoint = `${apiHost}/api/polls/${pollID}`;
 
-    // fetch(endpoint, {
-    //   method: 'POST',
-    //   body: JSON.stringify(data),
-    //   headers: {
-    //     Accept: 'application/json',
-    //     'Content-Type': 'application/json',
-    //     'Access-Control-Allow-Origin': apiHost,
-    //     'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-    //     'Access-Control-Allow-Headers': 'Origin, Content-Type',
-    //   },
-    // });
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, Content-Type',
+        },
+      });
+      const json = await res.json();
+      console.log("json:", json);
+    } catch (error) {
+      console.error(`ERROR: ${error}`);
+    }
   }
 
   return (
