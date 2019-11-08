@@ -157,9 +157,9 @@ const Poll = () => {
     const percentValues = Object.keys(percentages);
 
     // Create a new array of invalid percentages (0 - 100)
-    const zeroToHundred = /^[1-9][0-9]?$|^100$/;
+    const zeroToHundred = /^[0-9][0-9]?$|^100$/;
     const invalidPercentages = percentValues.reduce((acc, val) => {
-      if (zeroToHundred.test(percentages[val])) {
+      if (zeroToHundred.test(percentages[val]) || percentages[val] === '') {
         return acc;
       }
       return [...acc, { [val]: percentages[val] }];
@@ -169,13 +169,22 @@ const Poll = () => {
     // Calculate the sum of the percentages
     const totalPercentage = calculateTotalPercentage(percentages);
 
+    if (totalPercentage < 100) {
+      alert(`Please allocate all 100 percentage points (current subtotal: ${totalPercentage})`);
+    }
+
     // Valid percentages
     if (invalidPercentages.length === 0 && totalPercentage === 100) {
       // Format allocations
-      const allocations = categories.map((c, index) => {
+      const allocations = categories.map(c => {
+        const cid = c.categoryID;
+        let points = percentages[cid];
+        if (points === '') {
+          points = 0;
+        }
         return {
-          categoryID: c.categoryID,
-          points: parseInt(percentages[c.categoryID]),
+          categoryID: cid,
+          points: parseInt(points),
         };
       });
 
