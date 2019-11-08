@@ -213,7 +213,14 @@ const Poll = () => {
     const message = generateMessage(account, pollID);
 
     const signer = provider.getSigner();
-    const signature = await signer.signMessage(message);
+    let signature;
+    try {
+      signature = await signer.signMessage(message);
+    } catch (error) {
+      alert('Message signature rejected. Vote was not submitted to poll.');
+      return;
+    }
+
     const data = {
       response: {
         account,
@@ -224,10 +231,14 @@ const Poll = () => {
 
     console.log('data:', data);
 
-    const apiHost = 'http://localhost:5001';
+    const apiHost =
+      process.env.GATSBY_PANVALA_ENV === 'development'
+        ? 'http://localhost:5001'
+        : process.env.GATSBY_PANVALA_ENV === 'staging'
+        ? 'https://staging-api.panvala.com'
+        : 'https://api.panvala.com';
     const endpoint = `${apiHost}/api/polls/${pollID}`;
 
-    try {
       const res = await fetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -240,9 +251,26 @@ const Poll = () => {
         },
       });
       const json = await res.json();
-      console.log("json:", json);
-    } catch (error) {
-      console.error(`ERROR: ${error}`);
+    console.log('json:', json);
+
+    // Response errors
+    if (res.status !== 200) {
+      console.log('res:', res);
+      if (json.hasOwnProperty('errors') && json.errors.length > 0) {
+        console.log('ERROR:', json.errors);
+      }
+      if (json.hasOwnProperty('msg')) {
+        if (json.msg.includes('Invalid poll response request data')) {
+          alert(
+            'Poll form validation failed. Please verify each field and try again, or contact the Panvala team @ info.panvala.com'
+          );
+        }
+        if (json.msg.includes('Signature does not match account')) {
+          alert(
+            'Message signature did not match the signing account. Vote was not submitted to poll.'
+          );
+        }
+      }
     }
   }
 
