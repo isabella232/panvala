@@ -325,13 +325,13 @@ const Poll = () => {
       </section>
 
       {/* Fund work that matters */}
-      <section className="cf w-100 ph6 pv4 bottom-clip-down bg-white flex justify-between items-center">
+      <section className="cf w-100 ph6 bottom-clip-down bg-white flex justify-between items-center">
         <div className="w-100 w-25-ns pa2 dib">
           <img src={pollTwo} className="center" />
         </div>
         <div className="w-100 w-50-ns pa2 dib">
           <h2>Fund work that matters</h2>
-          <p>
+          <p className="lh-copy">
             PAN tokens have been granted to teams that the whole Ethereum community depends on. The
             more tokens you acquire to vote, the more work those teams can fund with their tokens.
           </p>
@@ -345,12 +345,27 @@ const Poll = () => {
       {/* Ballot */}
       <section id="poll-form" ref={pollFormRef} className="pv6 mb4 bg-gray full-clip-down-lg">
         <div className="w-100 w-60-ns center">
+          <div className="w-70 center tc lh-copy">
+            This poll is for PAN-holders to signal their preferences for the next batch of grant
+            allocations. If you do not currently have a PAN balance but want to vote, or you would
+            like to increase your voting power before the <b>November 19</b> deadline, you can do so
+            via{' '}
+            <a
+              href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
+              target="_blank"
+              className="link b dim blue"
+            >
+              Uniswap
+            </a>
+          </div>
+
           <div className="tc pv4">
             <h2>Category Ballot</h2>
             <p className="w-40 center tc lh-copy">
               Please distribute 100 percentage points between the following categories:
             </p>
           </div>
+
           <div className="bg-white shadow lh-copy black">
             <form>
               {categories.map((category, index) => {
@@ -425,6 +440,15 @@ const Poll = () => {
               </div>
 
               <div className="cf pa4">
+                <div className="f5 tl pb3 lh-copy">
+                  The final poll results will be calculated using the balance of PAN tokens in your
+                  account on November 19.
+                </div>
+                <div className="f5 tl pb4 lh-copy">
+                  <b>
+                    Reminder: You will not lose any tokens or ETH for participating in this poll.
+                  </b>
+                </div>
                 <div className="fr w-100 w-70-l flex-column items-end">
                   <div className="flex justify-end">
                     <input
@@ -434,12 +458,6 @@ const Poll = () => {
                       className="f6 link dim bn br-pill pv3 ph4 bg-teal white fw7"
                       value="Submit Vote"
                     />
-                  </div>
-
-                  <div className="f7 tr pt3 o-50">
-                    The final poll results will be calculated using the minimum number of PAN tokens
-                    in your account from November 16-22, the week after the poll concludes. Selling
-                    or transferring tokens during this period will reduce the weight of your vote.
                   </div>
                 </div>
               </div>
