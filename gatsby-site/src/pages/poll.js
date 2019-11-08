@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { providers } from 'ethers';
+import { providers, Contract, utils } from 'ethers';
 import styled from 'styled-components';
 import { layout, space } from 'styled-system';
 import panUtils from 'panvala-utils';
@@ -12,6 +12,7 @@ import Button from '../components/Button';
 import pollOne from '../img/poll-1.png';
 import pollTwo from '../img/poll-2.png';
 import { calculateTotalPercentage } from '../utils/poll';
+import { sliceDecimals } from '../utils/format';
 
 const categories = [
   {
@@ -67,6 +68,7 @@ const ClipContainer = styled.div`
 const Poll = () => {
   const pollFormRef = useRef(null);
   const [account, setAccount] = useState('');
+  const [balance, setBalance] = useState('');
   const [ptsRemaining, setPtsRemaining] = useState(100);
   const [provider, setProvider] = useState();
   const [allocations, setAllocations] = useState();
@@ -111,11 +113,24 @@ const Poll = () => {
   }
 
   useEffect(() => {
+    async function getBalance() {
+      const tokenAbi = panUtils.contractABIs.BasicToken;
+      const token = new Contract(
+        '0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44',
+        tokenAbi.abi,
+        provider
+      );
+      const acct = (await provider.listAccounts())[0];
+      const bal = await token.balanceOf(acct);
+      const balance = utils.formatUnits(bal, 18);
+      setBalance(sliceDecimals(balance.toString()));
+    }
     if (
       typeof window !== 'undefined' &&
       typeof window.ethereum !== 'undefined' &&
       typeof provider !== 'undefined'
     ) {
+      getBalance();
       setSelectedAccount();
     }
   }, [provider]);
@@ -239,18 +254,18 @@ const Poll = () => {
         : 'https://api.panvala.com';
     const endpoint = `${apiHost}/api/polls/${pollID}`;
 
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, Content-Type',
-        },
-      });
-      const json = await res.json();
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, Content-Type',
+      },
+    });
+    const json = await res.json();
     console.log('json:', json);
 
     // Response errors
@@ -279,7 +294,7 @@ const Poll = () => {
       <SEO title="Poll" />
 
       <section className="bg-gradient bottom-clip-up-1">
-        <Nav />
+        <Nav account={account} balance={balance} handleClick={connectWallet} />
 
         {/* <!-- Instructions --> */}
         <ClipContainer p={['1rem 0 4rem', '5rem 6rem']}>
