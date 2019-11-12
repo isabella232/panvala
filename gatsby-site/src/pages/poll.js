@@ -13,6 +13,13 @@ import pollOne from '../img/poll-1.png';
 import pollTwo from '../img/poll-2.png';
 import { calculateTotalPercentage } from '../utils/poll';
 import { sliceDecimals } from '../utils/format';
+import {
+  ModalBody,
+  ModalOverlay,
+  ModalTitle,
+  ModalCopy,
+  ModalSubTitle,
+} from '../components/WebsiteModal';
 
 const categories = [
   {
@@ -69,9 +76,15 @@ const Poll = () => {
   const pollFormRef = useRef(null);
   const [account, setAccount] = useState('');
   const [balance, setBalance] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
   const [ptsRemaining, setPtsRemaining] = useState(100);
   const [provider, setProvider] = useState();
-  const [allocations, setAllocations] = useState();
+  const [allocations, setAllocations] = useState([]);
+  const [fields, setFields] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+  });
   const [percentages, setPercentages] = useState({
     1: '',
     2: '',
@@ -86,6 +99,10 @@ const Poll = () => {
       // Listen for network changes -> reload page
       window.ethereum.on('networkChanged', network => {
         console.log('MetaMask network changed:', network);
+        window.location.reload();
+      });
+      window.ethereum.on('accountsChanged', network => {
+        console.log('MetaMask account changed:', network);
         window.location.reload();
       });
     }
@@ -105,11 +122,14 @@ const Poll = () => {
         selectedAccount = (await window.ethereum.enable())[0];
       } catch (error) {
         if (error.stack.includes('User denied account authorization')) {
-          alert('MetaMask not enabled. In order to donate pan, you must authorize this app.');
+          alert(
+            'MetaMask not enabled. In order to respond to the poll, you must authorize this app.'
+          );
         }
       }
     }
     await setAccount(selectedAccount);
+    return selectedAccount;
   }
 
   useEffect(() => {
@@ -120,7 +140,10 @@ const Poll = () => {
         tokenAbi.abi,
         provider
       );
-      const acct = (await provider.listAccounts())[0];
+      let acct = (await provider.listAccounts())[0];
+      if (!acct) {
+        acct = await setSelectedAccount();
+      }
       const bal = await token.balanceOf(acct);
       const balance = utils.formatUnits(bal, 18);
       setBalance(sliceDecimals(balance.toString()));
@@ -130,8 +153,8 @@ const Poll = () => {
       typeof window.ethereum !== 'undefined' &&
       typeof provider !== 'undefined'
     ) {
-      getBalance();
       setSelectedAccount();
+      getBalance();
     }
   }, [provider]);
 
@@ -156,6 +179,13 @@ const Poll = () => {
     });
   }
 
+  function handleChangeField(e) {
+    setFields({
+      ...fields,
+      [e.target.id]: e.target.value,
+    });
+  }
+
   // Triggered by change in values
   useEffect(() => {
     const subtotal = calculateTotalPercentage(percentages);
@@ -169,6 +199,18 @@ const Poll = () => {
     if (!provider) {
       await connectWallet();
     }
+
+    // Calculate the sum of the percentages
+    const totalPercentage = calculateTotalPercentage(percentages);
+
+    if (totalPercentage < 100) {
+      alert(`Please allocate all 100 percentage points (current subtotal: ${totalPercentage})`);
+      return;
+    } else if (totalPercentage > 100) {
+      alert(`Please allocate just 100 percentage points (current subtotal: ${totalPercentage})`);
+      return;
+    }
+
     const percentValues = Object.keys(percentages);
 
     // Create a new array of invalid percentages (0 - 100)
@@ -180,13 +222,6 @@ const Poll = () => {
       return [...acc, { [val]: percentages[val] }];
     }, []);
     console.log('invalidPercentages:', invalidPercentages);
-
-    // Calculate the sum of the percentages
-    const totalPercentage = calculateTotalPercentage(percentages);
-
-    if (totalPercentage < 100) {
-      alert(`Please allocate all 100 percentage points (current subtotal: ${totalPercentage})`);
-    }
 
     // Valid percentages
     if (invalidPercentages.length === 0 && totalPercentage === 100) {
@@ -277,7 +312,7 @@ const Poll = () => {
       if (json.hasOwnProperty('msg')) {
         if (json.msg.includes('Invalid poll response request data')) {
           alert(
-            'Poll form validation failed. Please verify each field and try again, or contact the Panvala team @ info.panvala.com'
+            'Poll form validation failed. Please verify each field and try again, or contact the Panvala team @ info@panvala.com'
           );
         }
         if (json.msg.includes('Signature does not match account')) {
@@ -285,7 +320,16 @@ const Poll = () => {
             'Message signature did not match the signing account. Vote was not submitted to poll.'
           );
         }
+        if (json.msg.includes('Validation error')) {
+          if (json.errors[1].message === 'account must be unique') {
+            alert('Each account may only vote once per poll. Vote was not submitted to poll.');
+          }
+        }
       }
+    } else {
+      setPtsRemaining(100);
+      setPercentages({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' });
+      setModalOpen(true);
     }
   }
 
@@ -406,25 +450,29 @@ const Poll = () => {
               {/* <-- name and email --> */}
               <div className="pa4 bb bw-2 b--black-10 black-60">
                 <Box color="black" display="flex" justifyContent="flex-end" mb={4}>
-                  Points Remaining: <b>{ptsRemaining}</b>
+                  Points Remaining:&nbsp;<b>{ptsRemaining}</b>
                 </Box>
                 <div className="cf pv2">
                   <div className="fl w-50 pr3">
                     <label>First Name (Optional)</label>
                     <input
                       type="text"
-                      id="poll-first-name"
+                      id="firstName"
                       placeholder="Enter your first name"
                       className="w-100 pa2"
+                      value={fields.firstName}
+                      onChange={handleChangeField}
                     ></input>
                   </div>
                   <div className="fl w-50">
                     <label>Last Name (Optional)</label>
                     <input
                       type="text"
-                      id="poll-last-name"
+                      id="lastName"
                       placeholder="Enter your last name"
                       className="w-100 pa2"
+                      value={fields.lastName}
+                      onChange={handleChangeField}
                     ></input>
                   </div>
                 </div>
@@ -432,9 +480,11 @@ const Poll = () => {
                   <label>Email (Optional)</label>
                   <input
                     type="text"
-                    id="poll-email"
+                    id="email"
                     placeholder="Enter your email"
                     className="w-100 pa2"
+                    value={fields.email}
+                    onChange={handleChangeField}
                   ></input>
                 </div>
               </div>
@@ -464,6 +514,46 @@ const Poll = () => {
             </form>
           </div>
         </div>
+        {modalOpen && (
+          <div className="flex justify-center h5">
+            <ModalOverlay handleClick={() => setModalOpen(false)} />
+            <ModalBody>
+              <ModalTitle>Thank you for voting!</ModalTitle>
+              <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
+              <ModalCopy>
+                Thank you for voting in the poll for the current batch. Your vote helps decide which
+                types of grants are awarded. Here is what you voted for:
+              </ModalCopy>
+              <Box width="95%" mt="3">
+                <Box display="flex" flexDirection="column">
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    pb="2"
+                    px="2"
+                    fontWeight="bold"
+                    color="black"
+                  >
+                    <Box>Category</Box>
+                    <Box>Allocation</Box>
+                  </Box>
+                  {categories.map((c, i) => (
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      key={c.categoryID}
+                      bg={i % 2 === 0 && '#F5F6F9'}
+                      p={2}
+                    >
+                      <Box>{c.title}</Box>
+                      <Box>{`${allocations.length && allocations[c.categoryID - 1].points}%`}</Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            </ModalBody>
+          </div>
+        )}
       </section>
     </Layout>
   );
