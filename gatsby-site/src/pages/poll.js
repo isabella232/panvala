@@ -107,13 +107,7 @@ const Poll = () => {
         console.log('MetaMask network changed:', network);
         window.location.reload();
       });
-      window.ethereum.on('accountsChanged', network => {
-        if (account !== '') {
-          console.log('MetaMask account changed:', network);
-          window.location.reload();
         }
-      });
-    }
   }, []);
 
   function handleViewPollClick() {
@@ -291,6 +285,12 @@ const Poll = () => {
     if (account && allocations.length > 0) {
       console.log('form valid');
       postPoll();
+    }
+    if (account !== '') {
+      window.ethereum.on('accountsChanged', network => {
+        console.log('MetaMask account changed:', network);
+        window.location.reload();
+      });
     }
     if (account && alreadyVoted) {
       alert('The connected account has already voted in this poll.');
