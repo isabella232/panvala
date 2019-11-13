@@ -58,7 +58,7 @@ const styles = {
     color: '#333',
     lineHeight: '1.75rem',
     textAlign: 'center',
-    marginTop: '1rem'
+    marginTop: '1rem',
   },
   copy: {
     marginTop: '1rem',

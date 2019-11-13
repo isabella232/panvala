@@ -66,17 +66,21 @@ const categories = [
   },
 ];
 
+const pollDeadline = 'November 22';
+
 const ClipContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   ${layout};
   ${space};
 `;
+
 const Poll = () => {
   const pollFormRef = useRef(null);
   const [account, setAccount] = useState('');
   const [balance, setBalance] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [welcomeModalOpen, setWelcomeModalOpen] = useState(true);
   const [ptsRemaining, setPtsRemaining] = useState(100);
   const [provider, setProvider] = useState();
   const [allocations, setAllocations] = useState([]);
@@ -102,8 +106,10 @@ const Poll = () => {
         window.location.reload();
       });
       window.ethereum.on('accountsChanged', network => {
-        console.log('MetaMask account changed:', network);
-        window.location.reload();
+        if (account !== '') {
+          console.log('MetaMask account changed:', network);
+          window.location.reload();
+        }
       });
     }
   }, []);
@@ -140,21 +146,33 @@ const Poll = () => {
         tokenAbi.abi,
         provider
       );
+
       let acct = (await provider.listAccounts())[0];
+
+      // User has not enabled the app. Trigger metamask pop-up.
       if (!acct) {
         acct = await setSelectedAccount();
       }
+
+      // Do not proceed with callback (setSelectedAccount)
+      if (!acct) {
+        return false;
+      }
+
       const bal = await token.balanceOf(acct);
       const balance = utils.formatUnits(bal, 18);
       setBalance(sliceDecimals(balance.toString()));
+      return balance;
     }
+
     if (
       typeof window !== 'undefined' &&
       typeof window.ethereum !== 'undefined' &&
       typeof provider !== 'undefined'
     ) {
-      setSelectedAccount();
-      getBalance();
+      // Only set selectedAccount if user is connected to the app
+      // (works even with 0 balance)
+      getBalance().then(bal => bal && setSelectedAccount());
     }
   }, [provider]);
 
@@ -164,7 +182,7 @@ const Poll = () => {
         const p = new providers.Web3Provider(window.ethereum);
         await setProvider(p);
       } else if (!account) {
-        await setSelectedAccount();
+        return setSelectedAccount();
       }
     } else {
       alert('MetaMask not found. Please download MetaMask @ metamask.io');
@@ -197,7 +215,10 @@ const Poll = () => {
   async function handleFormSubmit(event) {
     event.preventDefault();
     if (!provider) {
-      await connectWallet();
+      const acct = await connectWallet();
+      if (!acct) {
+        return;
+      }
     }
 
     // Calculate the sum of the percentages
@@ -245,7 +266,7 @@ const Poll = () => {
 
   // Triggered by validation of form, formatting of allocations
   useEffect(() => {
-    if (account && allocations) {
+    if (account && allocations.length > 0) {
       console.log('form valid');
       postPoll();
     }
@@ -337,6 +358,31 @@ const Poll = () => {
     <Layout>
       <SEO title="Poll" />
 
+      {welcomeModalOpen && !account && (
+        <div className="flex justify-center h5 absolute top-0 left-0 right-0">
+          <ModalOverlay handleClick={() => setWelcomeModalOpen(false)} />
+          <ModalBody>
+            <ModalTitle>Welcome to the Panvala Poll</ModalTitle>
+            <ModalCopy>
+              This poll is for PAN-holders to signal their preferences for the next batch of grant
+              allocations. If you do not currently have a PAN balance but want to vote, or you would
+              like to increase your voting power before the {pollDeadline} deadline, you can do so
+              via uniswap.
+            </ModalCopy>
+            <Box flex justifyContent="center">
+              <a
+                href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
+                target="_blank"
+                className="link b dim blue"
+              >
+                <Button p={3} mr={3} text="Get PAN Tokens" bg="#F5F6F9" color="black" />
+              </a>
+              <Button p={3} ml={3} text="Connect Wallet" onClick={connectWallet} />
+            </Box>
+          </ModalBody>
+        </div>
+      )}
+
       <section className="bg-gradient bottom-clip-up-1">
         <Nav account={account} balance={balance} handleClick={connectWallet} />
 
@@ -392,8 +438,8 @@ const Poll = () => {
           <div className="w-70 center tc lh-copy">
             This poll is for PAN-holders to signal their preferences for the next batch of grant
             allocations. If you do not currently have a PAN balance but want to vote, or you would
-            like to increase your voting power before the <b>November 19</b> deadline, you can do so
-            via{' '}
+            like to increase your voting power before the <b>{pollDeadline}</b> deadline, you can do
+            so via{' '}
             <a
               href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
               target="_blank"
@@ -492,7 +538,7 @@ const Poll = () => {
               <div className="cf pa4">
                 <div className="f5 tl pb3 lh-copy">
                   The final poll results will be calculated using the balance of PAN tokens in your
-                  account on November 19.
+                  account on {pollDeadline}.
                 </div>
                 <div className="f5 tl pb4 lh-copy">
                   <b>
@@ -514,6 +560,7 @@ const Poll = () => {
             </form>
           </div>
         </div>
+
         {modalOpen && (
           <div className="flex justify-center h5">
             <ModalOverlay handleClick={() => setModalOpen(false)} />

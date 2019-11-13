@@ -14,7 +14,7 @@ import {
 const Box = styled.div`
   box-sizing: 'border-box';
   min-width: 0;
-
+  display: ${props => (props.flex ? 'flex' : 'block')};
   ${space};
   ${color};
   ${layout};
