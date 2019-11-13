@@ -66,6 +66,7 @@ const categories = [
   },
 ];
 
+const pollID = '1';
 const pollDeadline = 'November 22';
 
 const ClipContainer = styled.div`
@@ -80,6 +81,7 @@ const Poll = () => {
   const [account, setAccount] = useState('');
   const [balance, setBalance] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [alreadyVoted, setAlreadyVoted] = useState(false);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(true);
   const [ptsRemaining, setPtsRemaining] = useState(100);
   const [provider, setProvider] = useState();
@@ -266,11 +268,56 @@ const Poll = () => {
 
   // Triggered by validation of form, formatting of allocations
   useEffect(() => {
+    if (account) {
+      const { endpoint, headers } = getEndpoint('GET');
+      console.log('endpoint:', endpoint);
+      fetch(endpoint, {
+        method: 'GET',
+        headers,
+      })
+        .then(res => {
+          console.log('res:', res);
+          if (res.status === 200) {
+            return res.json();
+          }
+        })
+        .then(json => {
+          console.log('json:', json);
+          if (json.responded) {
+            setAlreadyVoted(true);
+          }
+        });
+    }
     if (account && allocations.length > 0) {
       console.log('form valid');
       postPoll();
     }
-  }, [account, allocations]);
+    if (account && alreadyVoted) {
+      alert('The connected account has already voted in this poll.');
+    }
+  }, [account, allocations, alreadyVoted]);
+
+  function getEndpoint(method) {
+    const apiHost =
+      process.env.GATSBY_PANVALA_ENV === 'development'
+        ? 'http://localhost:5001'
+        : process.env.GATSBY_PANVALA_ENV === 'staging'
+        ? 'https://staging-api.panvala.com'
+        : 'https://api.panvala.com';
+
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': apiHost,
+      'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, Content-Type',
+    };
+    if (method === 'POST') {
+      return { endpoint: `${apiHost}/api/polls/${pollID}`, headers };
+    } else {
+      return { endpoint: `${apiHost}/api/polls/${pollID}/status/${account}`, headers };
+    }
+  }
 
   // Posts poll to database
   async function postPoll() {
@@ -280,7 +327,6 @@ const Poll = () => {
     }
 
     console.log('panUtils:', panUtils);
-    const pollID = '1';
     const message = generateMessage(account, pollID);
 
     const signer = provider.getSigner();
@@ -302,24 +348,12 @@ const Poll = () => {
 
     console.log('data:', data);
 
-    const apiHost =
-      process.env.GATSBY_PANVALA_ENV === 'development'
-        ? 'http://localhost:5001'
-        : process.env.GATSBY_PANVALA_ENV === 'staging'
-        ? 'https://staging-api.panvala.com'
-        : 'https://api.panvala.com';
-    const endpoint = `${apiHost}/api/polls/${pollID}`;
+    const { endpoint, headers } = getEndpoint('POST');
 
     const res = await fetch(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, Content-Type',
-      },
+      headers,
     });
     const json = await res.json();
     console.log('json:', json);
@@ -435,130 +469,151 @@ const Poll = () => {
       {/* Ballot */}
       <section id="poll-form" ref={pollFormRef} className="pv6 mb4 bg-gray full-clip-down-lg">
         <div className="w-100 w-60-ns center">
-          <div className="w-70 center tc lh-copy">
-            This poll is for PAN-holders to signal their preferences for the next batch of grant
-            allocations. If you do not currently have a PAN balance but want to vote, or you would
-            like to increase your voting power before the <b>{pollDeadline}</b> deadline, you can do
-            so via{' '}
-            <a
-              href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
-              target="_blank"
-              className="link b dim blue"
-            >
-              Uniswap
-            </a>
-          </div>
+          {alreadyVoted ? (
+            <Box flex flexDirection="column" justifyContent="center" alignItems="center">
+              <ModalTitle>Thank you for voting!</ModalTitle>
+              <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
+              <Box color="#555" p={4} m={2} mx={5} textAlign="center">
+                Thank you for voting in the poll for the current batch. Even though your vote has
+                been submitted you can increase the weight of your vote through holding more PAN
+                tokens.
+              </Box>
+              <a
+                href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
+                target="_blank"
+                className="link b dim blue"
+              >
+                <Button p={3} text="Increase Voting Weight" />
+              </a>
+            </Box>
+          ) : (
+            <>
+              <div className="w-70 center tc lh-copy">
+                This poll is for PAN-holders to signal their preferences for the next batch of grant
+                allocations. If you do not currently have a PAN balance but want to vote, or you
+                would like to increase your voting power before the <b>{pollDeadline}</b> deadline,
+                you can do so via{' '}
+                <a
+                  href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
+                  target="_blank"
+                  className="link b dim blue"
+                >
+                  Uniswap
+                </a>
+              </div>
+              <div className="tc pv4">
+                <h2>Category Ballot</h2>
+                <p className="w-40 center tc lh-copy">
+                  Please distribute 100 percentage points between the following categories:
+                </p>
+              </div>
 
-          <div className="tc pv4">
-            <h2>Category Ballot</h2>
-            <p className="w-40 center tc lh-copy">
-              Please distribute 100 percentage points between the following categories:
-            </p>
-          </div>
+              <div className="bg-white shadow lh-copy black">
+                <form>
+                  {categories.map((category, index) => {
+                    const { description, title, previous } = category;
+                    const identifier = `poll-points-category-${index}`;
 
-          <div className="bg-white shadow lh-copy black">
-            <form>
-              {categories.map((category, index) => {
-                const { description, title, previous } = category;
-                const identifier = `poll-points-category-${index}`;
-
-                return (
-                  <div key={identifier} className="cf pa3 bb bw-2 b--black-10">
-                    <div className="fl w-80 pa2 pr4">
-                      <div className="f4 b">{title}</div>
-                      <p>{description}</p>
-                    </div>
-                    <div className="fl w-20 pa2 f5 tr">
-                      <div className="b ttu f6 o-50">previous batch</div>
-                      <div className="pb3">{previous}%</div>
-                      <div className="b ttu f6 o-50">
-                        <label className="ma0 mb3">Batch five</label>
+                    return (
+                      <div key={identifier} className="cf pa3 bb bw-2 b--black-10">
+                        <div className="fl w-80 pa2 pr4">
+                          <div className="f4 b">{title}</div>
+                          <p>{description}</p>
+                        </div>
+                        <div className="fl w-20 pa2 f5 tr">
+                          <div className="b ttu f6 o-50">previous batch</div>
+                          <div className="pb3">{previous}%</div>
+                          <div className="b ttu f6 o-50">
+                            <label className="ma0 mb3">Batch five</label>
+                          </div>
+                          <div>
+                            <input
+                              type="number"
+                              name={identifier}
+                              id={identifier}
+                              max="100"
+                              min="0"
+                              required
+                              placeholder="%"
+                              onChange={e => handleChange(e.target.value, category.categoryID)}
+                              value={percentages[category.categoryID]}
+                              className="f6 input-reset b--black-10 pv3 ph2 db w-100 br3 mt2 tr"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div>
+                    );
+                  })}
+
+                  {/* <-- name and email --> */}
+                  <div className="pa4 bb bw-2 b--black-10 black-60">
+                    <Box color="black" display="flex" justifyContent="flex-end" mb={4}>
+                      Points Remaining:&nbsp;<b>{ptsRemaining}</b>
+                    </Box>
+                    <div className="cf pv2">
+                      <div className="fl w-50 pr3">
+                        <label>First Name (Optional)</label>
                         <input
-                          type="number"
-                          name={identifier}
-                          id={identifier}
-                          max="100"
-                          min="0"
-                          required
-                          placeholder="%"
-                          onChange={e => handleChange(e.target.value, category.categoryID)}
-                          value={percentages[category.categoryID]}
-                          className="f6 input-reset b--black-10 pv3 ph2 db w-100 br3 mt2 tr"
+                          type="text"
+                          id="firstName"
+                          placeholder="Enter your first name"
+                          className="w-100 pa2"
+                          value={fields.firstName}
+                          onChange={handleChangeField}
+                        ></input>
+                      </div>
+                      <div className="fl w-50">
+                        <label>Last Name (Optional)</label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          placeholder="Enter your last name"
+                          className="w-100 pa2"
+                          value={fields.lastName}
+                          onChange={handleChangeField}
+                        ></input>
+                      </div>
+                    </div>
+                    <div className="pv2">
+                      <label>Email (Optional)</label>
+                      <input
+                        type="text"
+                        id="email"
+                        placeholder="Enter your email"
+                        className="w-100 pa2"
+                        value={fields.email}
+                        onChange={handleChangeField}
+                      ></input>
+                    </div>
+                  </div>
+
+                  <div className="cf pa4">
+                    <div className="f5 tl pb3 lh-copy">
+                      The final poll results will be calculated using the balance of PAN tokens in
+                      your account on {pollDeadline}.
+                    </div>
+                    <div className="f5 tl pb4 lh-copy">
+                      <b>
+                        Reminder: You will not lose any tokens or ETH for participating in this
+                        poll.
+                      </b>
+                    </div>
+                    <div className="fr w-100 w-70-l flex-column items-end">
+                      <div className="flex justify-end">
+                        <input
+                          type="submit"
+                          name="submit"
+                          onClick={handleFormSubmit}
+                          className="f6 link dim bn br-pill pv3 ph4 bg-teal white fw7"
+                          value="Submit Vote"
                         />
                       </div>
                     </div>
                   </div>
-                );
-              })}
-
-              {/* <-- name and email --> */}
-              <div className="pa4 bb bw-2 b--black-10 black-60">
-                <Box color="black" display="flex" justifyContent="flex-end" mb={4}>
-                  Points Remaining:&nbsp;<b>{ptsRemaining}</b>
-                </Box>
-                <div className="cf pv2">
-                  <div className="fl w-50 pr3">
-                    <label>First Name (Optional)</label>
-                    <input
-                      type="text"
-                      id="firstName"
-                      placeholder="Enter your first name"
-                      className="w-100 pa2"
-                      value={fields.firstName}
-                      onChange={handleChangeField}
-                    ></input>
-                  </div>
-                  <div className="fl w-50">
-                    <label>Last Name (Optional)</label>
-                    <input
-                      type="text"
-                      id="lastName"
-                      placeholder="Enter your last name"
-                      className="w-100 pa2"
-                      value={fields.lastName}
-                      onChange={handleChangeField}
-                    ></input>
-                  </div>
-                </div>
-                <div className="pv2">
-                  <label>Email (Optional)</label>
-                  <input
-                    type="text"
-                    id="email"
-                    placeholder="Enter your email"
-                    className="w-100 pa2"
-                    value={fields.email}
-                    onChange={handleChangeField}
-                  ></input>
-                </div>
+                </form>
               </div>
-
-              <div className="cf pa4">
-                <div className="f5 tl pb3 lh-copy">
-                  The final poll results will be calculated using the balance of PAN tokens in your
-                  account on {pollDeadline}.
-                </div>
-                <div className="f5 tl pb4 lh-copy">
-                  <b>
-                    Reminder: You will not lose any tokens or ETH for participating in this poll.
-                  </b>
-                </div>
-                <div className="fr w-100 w-70-l flex-column items-end">
-                  <div className="flex justify-end">
-                    <input
-                      type="submit"
-                      name="submit"
-                      onClick={handleFormSubmit}
-                      className="f6 link dim bn br-pill pv3 ph4 bg-teal white fw7"
-                      value="Submit Vote"
-                    />
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
+            </>
+          )}
         </div>
 
         {modalOpen && (
