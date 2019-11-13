@@ -107,7 +107,7 @@ const Poll = () => {
         console.log('MetaMask network changed:', network);
         window.location.reload();
       });
-        }
+    }
   }, []);
 
   function handleViewPollClick() {
@@ -421,14 +421,7 @@ const Poll = () => {
         <Nav account={account} balance={balance} handleClick={connectWallet} />
 
         {/* <!-- Instructions --> */}
-        <ClipContainer
-          p={[
-            '1rem 0 4rem',
-            '2rem 3rem 4rem',
-            '2rem 5rem 5rem',
-            '5rem 10rem 8rem',
-          ]}
-        >
+        <ClipContainer p={['1rem 0 4rem', '2rem 3rem 4rem', '2rem 5rem 5rem', '5rem 10rem 8rem']}>
           <Box width={[1, 1, 0.5]} px={['4', '0']}>
             <h1 className="white f1-5 b ma0 mb4 w-80-l w-100">The Panvala Poll</h1>
             <div className="f5 lh-copy mb3">
@@ -495,25 +488,28 @@ const Poll = () => {
             </Box>
           ) : (
             <>
-              <div className="w-70 center tc lh-copy">
-                This poll is for PAN-holders to signal their preferences for the next batch of grant
-                allocations. If you do not currently have a PAN balance but want to vote, or you
-                would like to increase your voting power before the <b>{pollDeadline}</b> deadline,
-                you can do so via{' '}
-                <a
-                  href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
-                  target="_blank"
-                  className="link b dim blue"
-                >
-                  Uniswap
-                </a>
-              </div>
               <div className="tc pv4">
                 <h2>Category Ballot</h2>
-                <p className="w-40 center tc lh-copy">
-                  Please distribute 100 percentage points between the following categories:
+                <p className="w-80 center tc lh-copy mb1">
+                  This poll is for PAN-holders to signal their preferences for the next batch of
+                  grant allocations. If you do not currently have a PAN balance but want to vote, or
+                  you would like to increase your voting power before the <b>{pollDeadline}</b>{' '}
+                  deadline, you can do so via uniswap.
+                  <Box flex justifyContent="center" my={3}>
+                    <a
+                      href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
+                      target="_blank"
+                      className="link b dim blue"
+                    >
+                      <Button text="Get PAN Tokens" />
+                    </a>
+                  </Box>
                 </p>
               </div>
+
+              <Box flex justifyContent="center" my={3}>
+                Please distribute 100 percentage points between the following categories:
+              </Box>
 
               <div className="bg-white shadow lh-copy black">
                 <form>
