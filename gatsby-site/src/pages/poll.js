@@ -489,12 +489,11 @@ const Poll = () => {
           {modalOpen ? (
             <Box flex flexDirection="column" justifyContent="center" alignItems="center">
               <ModalTitle>Thank you for voting!</ModalTitle>
-              <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
-              <ModalCopy>
+              <Box color="#555" p={4} m={2} mx={5} textAlign="center" className="lh-copy">
                 Thank you for voting in the poll for the current batch. Your vote helps decide which
                 types of grants are awarded. Here is what you voted for:
-              </ModalCopy>
-              <Box width="95%" mt="3">
+              </Box>
+              <Box width="75%" mt="3">
                 <Box display="flex" flexDirection="column">
                   <Box
                     display="flex"
@@ -521,12 +520,24 @@ const Poll = () => {
                   ))}
                 </Box>
               </Box>
+              <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
+              <Box color="#555" p={4} m={2} mx={5} textAlign="center" className="lh-copy">
+                Even though your vote has been submitted, you have until the <b>{pollDeadline}</b>{' '}
+                deadline to increase the weight of your vote through holding more PAN tokens.
+              </Box>
+              <a
+                href="https://uniswap.exchange?outputCurrency=0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44"
+                target="_blank"
+                className="link b dim blue"
+              >
+                <Button p={3} text="Increase Voting Weight" />
+              </a>
             </Box>
           ) : alreadyVoted ? (
             <Box flex flexDirection="column" justifyContent="center" alignItems="center">
               <ModalTitle>Thank you for voting!</ModalTitle>
               <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
-              <Box color="#555" p={4} m={2} mx={5} textAlign="center">
+              <Box color="#555" p={4} m={2} mx={5} textAlign="center" className="lh-copy">
                 Thank you for voting in the poll for the current batch. Even though your vote has
                 been submitted you can increase the weight of your vote through holding more PAN
                 tokens.
