@@ -461,6 +461,7 @@ const Poll = () => {
           </p>
           <Button
             handleClick={connectWallet}
+            bg={account ? '#2138B7' : '#46B0AA'}
             text={account ? 'Wallet connected!' : 'Connect your wallet'}
           />
         </div>

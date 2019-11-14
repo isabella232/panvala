@@ -3,10 +3,12 @@ import React from 'react';
 import logoTeal from '../img/logo-teal.png';
 import Identicon from './Identicon';
 import Box from './system/Box';
+import TopBar from './TopBar';
 
 export default function Nav({ account, balance, handleClick }) {
   return (
     <>
+      <TopBar />
       {/* <!-- Navigation --> */}
       <nav className="dt-ns w-70-l w-80-m w-90 border-box center pv4">
         <a
