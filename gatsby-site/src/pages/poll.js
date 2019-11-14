@@ -82,6 +82,7 @@ const Poll = () => {
   const [balance, setBalance] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [alreadyVoted, setAlreadyVoted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(true);
   const [ptsRemaining, setPtsRemaining] = useState(100);
   const [provider, setProvider] = useState();
@@ -176,7 +177,9 @@ const Poll = () => {
     if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
       if (typeof provider === 'undefined') {
         const p = new providers.Web3Provider(window.ethereum);
-        await setProvider(p);
+        setProvider(p);
+        const acct = (await p.listAccounts())[0];
+        return acct;
       } else if (!account) {
         return setSelectedAccount();
       }
@@ -210,6 +213,7 @@ const Poll = () => {
   // User submits the poll
   async function handleFormSubmit(event) {
     event.preventDefault();
+    setSubmitted(true);
     if (!provider) {
       const acct = await connectWallet();
       if (!acct) {
@@ -260,6 +264,15 @@ const Poll = () => {
     }
   }
 
+  useEffect(() => {
+    if (account !== '') {
+      window.ethereum.on('accountsChanged', network => {
+        console.log('MetaMask account changed:', network);
+        window.location.reload();
+      });
+    }
+  }, [account]);
+
   // Triggered by validation of form, formatting of allocations
   useEffect(() => {
     if (account) {
@@ -277,25 +290,21 @@ const Poll = () => {
         })
         .then(json => {
           console.log('json:', json);
+          // Already voted, show alert
           if (json.responded) {
             setAlreadyVoted(true);
+            if (submitted) {
+              alert('The connected account has already voted in this poll.');
+            }
+          }
+
+          if (!json.responded && allocations.length > 0 && !alreadyVoted && submitted) {
+            console.log('form valid');
+            return postPoll();
           }
         });
     }
-    if (account && allocations.length > 0) {
-      console.log('form valid');
-      postPoll();
-    }
-    if (account !== '') {
-      window.ethereum.on('accountsChanged', network => {
-        console.log('MetaMask account changed:', network);
-        window.location.reload();
-      });
-    }
-    if (account && alreadyVoted) {
-      alert('The connected account has already voted in this poll.');
-    }
-  }, [account, allocations, alreadyVoted]);
+  }, [account, allocations, submitted]);
 
   function getEndpoint(method) {
     const apiHost =
@@ -354,13 +363,19 @@ const Poll = () => {
       method: 'POST',
       body: JSON.stringify(data),
       headers,
+    }).catch(err => {
+      if (err.message.includes('Failed to fetch')) {
+        alert(
+          'Uh oh! Failed to submit the poll. Please verify each field and try again, or contact the Panvala team at info@panvala.com'
+        );
+      }
     });
-    const json = await res.json();
-    console.log('json:', json);
 
     // Response errors
-    if (res.status !== 200) {
+    if (res && res.status !== 200) {
       console.log('res:', res);
+      const json = await res.json();
+      console.log('json:', json);
       if (json.hasOwnProperty('errors') && json.errors.length > 0) {
         console.log('ERROR:', json.errors);
       }
@@ -382,9 +397,10 @@ const Poll = () => {
         }
       }
     } else {
+      setModalOpen(true);
       setPtsRemaining(100);
       setPercentages({ 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' });
-      setModalOpen(true);
+      setAlreadyVoted(true);
     }
   }
 
@@ -400,8 +416,8 @@ const Poll = () => {
             <ModalCopy>
               This poll is for PAN-holders to signal their preferences for the next batch of grant
               allocations. If you do not currently have a PAN balance but want to vote, or you would
-              like to increase your voting power before the {pollDeadline} deadline, you can do so
-              via uniswap.
+              like to increase your voting power before the <b>{pollDeadline}</b> deadline, you can
+              do so via uniswap.
             </ModalCopy>
             <Box flex justifyContent="center">
               <a
@@ -470,7 +486,43 @@ const Poll = () => {
       {/* Ballot */}
       <section id="poll-form" ref={pollFormRef} className="pv6 mb4 bg-gray full-clip-down-lg">
         <div className="w-100 w-60-ns center">
-          {alreadyVoted ? (
+          {modalOpen ? (
+            <Box flex flexDirection="column" justifyContent="center" alignItems="center">
+              <ModalTitle>Thank you for voting!</ModalTitle>
+              <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
+              <ModalCopy>
+                Thank you for voting in the poll for the current batch. Your vote helps decide which
+                types of grants are awarded. Here is what you voted for:
+              </ModalCopy>
+              <Box width="95%" mt="3">
+                <Box display="flex" flexDirection="column">
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    pb="2"
+                    px="2"
+                    fontWeight="bold"
+                    color="black"
+                  >
+                    <Box>Category</Box>
+                    <Box>Allocation</Box>
+                  </Box>
+                  {categories.map((c, i) => (
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      key={c.categoryID}
+                      bg={i % 2 === 0 && '#F5F6F9'}
+                      p={2}
+                    >
+                      <Box>{c.title}</Box>
+                      <Box>{`${allocations.length && allocations[c.categoryID - 1].points}%`}</Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+          ) : alreadyVoted ? (
             <Box flex flexDirection="column" justifyContent="center" alignItems="center">
               <ModalTitle>Thank you for voting!</ModalTitle>
               <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
@@ -491,7 +543,7 @@ const Poll = () => {
             <>
               <div className="tc pv4">
                 <h2>Category Ballot</h2>
-                <p className="w-80 center tc lh-copy mb1">
+                <Box my={1} className="w-80 center tc lh-copy">
                   This poll is for PAN-holders to signal their preferences for the next batch of
                   grant allocations. If you do not currently have a PAN balance but want to vote, or
                   you would like to increase your voting power before the <b>{pollDeadline}</b>{' '}
@@ -505,7 +557,7 @@ const Poll = () => {
                       <Button text="Get PAN Tokens" />
                     </a>
                   </Box>
-                </p>
+                </Box>
               </div>
 
               <Box flex justifyContent="center" my={3}>
@@ -619,47 +671,6 @@ const Poll = () => {
             </>
           )}
         </div>
-
-        {modalOpen && (
-          <div className="flex justify-center h5">
-            <ModalOverlay handleClick={() => setModalOpen(false)} />
-            <ModalBody>
-              <ModalTitle>Thank you for voting!</ModalTitle>
-              <ModalSubTitle>{`Current voting weight: ${balance} PAN`}</ModalSubTitle>
-              <ModalCopy>
-                Thank you for voting in the poll for the current batch. Your vote helps decide which
-                types of grants are awarded. Here is what you voted for:
-              </ModalCopy>
-              <Box width="95%" mt="3">
-                <Box display="flex" flexDirection="column">
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    pb="2"
-                    px="2"
-                    fontWeight="bold"
-                    color="black"
-                  >
-                    <Box>Category</Box>
-                    <Box>Allocation</Box>
-                  </Box>
-                  {categories.map((c, i) => (
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      key={c.categoryID}
-                      bg={i % 2 === 0 && '#F5F6F9'}
-                      p={2}
-                    >
-                      <Box>{c.title}</Box>
-                      <Box>{`${allocations.length && allocations[c.categoryID - 1].points}%`}</Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            </ModalBody>
-          </div>
-        )}
       </section>
     </Layout>
   );
