@@ -80,11 +80,14 @@ export default function Nav({ account, balance, handleClick }) {
               </button>
             )
           ) : (
-            <a href="/donate">
-              <button className="f6 link dim bn br-pill white bg-teal fw7 pointer pv3 ph4">
-                Donate
-              </button>
-            </a>
+            typeof window !== 'undefined' &&
+            !window.location.href.includes('donate') && (
+              <a href="/donate">
+                <button className="f6 link dim bn br-pill white bg-teal fw7 pointer pv3 ph4">
+                  Donate
+                </button>
+              </a>
+            )
           )}
         </div>
       </nav>
