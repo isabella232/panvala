@@ -130,6 +130,7 @@ const Poll = () => {
             'MetaMask not enabled. In order to respond to the poll, you must authorize this app.'
           );
         }
+        return;
       }
     }
     await setAccount(selectedAccount);
@@ -272,18 +273,14 @@ const Poll = () => {
     }
   }
 
-  useEffect(() => {
-    if (account !== '') {
-      window.ethereum.on('accountsChanged', network => {
-        console.log('MetaMask account changed:', network);
-        window.location.reload();
-      });
-    }
-  }, [account]);
-
   // Triggered by validation of form, formatting of allocations
   useEffect(() => {
     if (account) {
+      window.ethereum.on('accountsChanged', accounts => {
+        if (accounts[0] !== account) {
+          setAccount(accounts[0]);
+        }
+      });
       const { endpoint, headers } = getEndpoint('GET');
       console.log('endpoint:', endpoint);
       fetch(endpoint, {
@@ -477,7 +474,13 @@ const Poll = () => {
 
       {/* Fund work that matters */}
       <section className="cf w-100 bottom-clip-down bg-white flex justify-between items-center">
-        <Box p={['3rem', '2rem']} mb={['1rem', '0']} flex alignItems="center" justifyContent="space-around">
+        <Box
+          p={['3rem', '2rem']}
+          mb={['1rem', '0']}
+          flex
+          alignItems="center"
+          justifyContent="space-around"
+        >
           <div className="w-100 w-25-ns dn dib-ns">
             <img alt="" src={pollTwo} className="center" />
           </div>

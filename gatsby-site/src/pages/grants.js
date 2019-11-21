@@ -27,7 +27,6 @@ import teamLevelK from '../img/grant-teams/levelk.png';
 import teamMaker from '../img/grant-teams/maker.png';
 import teamHash from '../img/grant-teams/hash.png';
 import teamAsseth from '../img/grant-teams/asseth.png';
-import grantsShapes from '../img/grants-shapes.svg';
 
 const Grants = () => {
   const applyRef = useRef(null);
@@ -807,6 +806,7 @@ const Grants = () => {
                   <a
                     href="https://medium.com/@Panvala/twelve-grants-awarded-in-batch-one-of-panvala-token-grants-59b8df7422fe"
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="link dim blue f7 fw7"
                   >
                     View website
@@ -818,7 +818,7 @@ const Grants = () => {
           <section className="w-33-l w-50-m w-100 pa3">
             <div className="shadow-card br3 tl overflow-hidden">
               <div className="h4 w-100 tc v-mid dtc bg-white">
-                <img src={teamPanvala} className="w-100 center" />
+                <img src={teamPanvala} alt="Team Panvala" className="w-100 center" />
               </div>
               <div className="pa4 flex flex-column justify-between h6 bg-white">
                 <div>
