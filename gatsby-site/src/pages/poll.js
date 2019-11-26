@@ -299,6 +299,8 @@ const Poll = () => {
             if (submitted) {
               alert('The connected account has already voted in this poll.');
             }
+          } else if (json.responded === false) {
+            setAlreadyVoted(false);
           }
 
           if (!json.responded && allocations.length > 0 && !alreadyVoted && submitted) {
