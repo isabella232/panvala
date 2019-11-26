@@ -118,7 +118,7 @@ const Poll = () => {
     });
   }
 
-  async function setSelectedAccount() {
+  async function setSelectedAccount(bal) {
     let selectedAccount = (await provider.listAccounts())[0];
     // user not enabled for this app
     if (!selectedAccount) {
@@ -133,37 +133,35 @@ const Poll = () => {
         return;
       }
     }
+    if (!bal) {
+      await getBalance();
+    }
     await setAccount(selectedAccount);
     return selectedAccount;
   }
 
-  useEffect(() => {
-    async function getBalance() {
-      const tokenAbi = panUtils.contractABIs.BasicToken;
-      const token = new Contract(
-        '0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44',
-        tokenAbi.abi,
-        provider
-      );
+  async function getBalance() {
+    const tokenAbi = panUtils.contractABIs.BasicToken;
+    const token = new Contract(
+      '0xD56daC73A4d6766464b38ec6D91eB45Ce7457c44',
+      tokenAbi.abi,
+      provider
+    );
 
-      let acct = (await provider.listAccounts())[0];
+    let acct = (await provider.listAccounts())[0];
 
-      // User has not enabled the app. Trigger metamask pop-up.
-      if (!acct) {
-        acct = await setSelectedAccount();
-      }
-
-      // Do not proceed with callback (setSelectedAccount)
-      if (!acct) {
-        return false;
-      }
-
-      const bal = await token.balanceOf(acct);
-      const balance = utils.formatUnits(bal, 18);
-      setBalance(sliceDecimals(balance.toString()));
-      return balance;
+    // User has not enabled the app. Trigger metamask pop-up.
+    if (!acct) {
+      return;
     }
 
+    const bal = await token.balanceOf(acct);
+    const balance = utils.formatUnits(bal, 18);
+    setBalance(sliceDecimals(balance.toString()));
+    return balance;
+  }
+
+  useEffect(() => {
     if (
       typeof window !== 'undefined' &&
       typeof window.ethereum !== 'undefined' &&
@@ -171,7 +169,7 @@ const Poll = () => {
     ) {
       // Only set selectedAccount if user is connected to the app
       // (works even with 0 balance)
-      getBalance().then(bal => bal && setSelectedAccount());
+      getBalance().then(setSelectedAccount);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
